@@ -31,14 +31,19 @@ export function PlaceForm({ place, onCancel, onSubmit }: Props) {
       form.append('_method', 'PATCH')
     }
     onSubmit(form)
-    if (!place) event.currentTarget.reset()
+    if (!place) {
+      event.currentTarget.reset()
+      setAddress('')
+      setLatitude('')
+      setLongitude('')
+    }
   }
 
   return (
     <form className="admin-form" onSubmit={submit}>
       <h2>{place ? 'Edit place' : 'Add place'}</h2>
       <input name="name" placeholder="Mandalay" defaultValue={place?.name ?? ''} required />
-      <input name="address" placeholder="Address" value={address} onChange={(event) => setAddress(event.target.value)} />
+      <input name="address" type="hidden" value={address} readOnly />
       <input name="image" type="file" accept="image/*" />
       <GooglePlacePicker
         lat={Number(latitude) || null}
@@ -49,8 +54,12 @@ export function PlaceForm({ place, onCancel, onSubmit }: Props) {
           setLongitude(String(location.lng))
         }}
       />
-      <input name="latitude" type="number" step="any" placeholder="Latitude" value={latitude} onChange={(event) => setLatitude(event.target.value)} />
-      <input name="longitude" type="number" step="any" placeholder="Longitude" value={longitude} onChange={(event) => setLongitude(event.target.value)} />
+      <input name="latitude" type="hidden" value={latitude} readOnly />
+      <input name="longitude" type="hidden" value={longitude} readOnly />
+      <div className="location-summary">
+        <span>Selected place</span>
+        <strong>{address || 'Choose a place on the map'}</strong>
+      </div>
       <div className="form-actions">
         {onCancel && <button type="button" onClick={onCancel}>Cancel</button>}
         <button className="primary-button" type="submit">{place ? 'Update place' : 'Save place'}</button>

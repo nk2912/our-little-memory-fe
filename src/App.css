@@ -692,6 +692,28 @@ textarea {
   font-size: 13px;
 }
 
+.location-summary {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid rgba(31, 75, 69, 0.16);
+  border-radius: 8px;
+  background: rgba(31, 75, 69, 0.06);
+}
+
+.location-summary span {
+  color: #8a4c34;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.location-summary strong {
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
 .eyebrow {
   margin: 0 0 4px;
   color: #8a4c34;

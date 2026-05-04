@@ -45,9 +45,19 @@ export function GooglePlacePicker({ lat, lng, onChange }: Props) {
     return <div className="map-placeholder"><strong>Loading map</strong></div>
   }
 
+  const resolveAddress = (next: { lat: number; lng: number }) => {
+    const geocoder = new google.maps.Geocoder()
+    geocoder.geocode({ location: next }, (results, status) => {
+      if (status === 'OK' && results?.[0]?.formatted_address) {
+        onChange({ ...next, address: results[0].formatted_address })
+      }
+    })
+  }
+
   const updateLocation = (next: { lat: number; lng: number }, address?: string) => {
     setMarker(next)
     onChange({ ...next, address })
+    if (!address) resolveAddress(next)
   }
 
   return (
@@ -66,7 +76,7 @@ export function GooglePlacePicker({ lat, lng, onChange }: Props) {
           )
         }}
       >
-        <input className="map-search" placeholder="Search location with Google Maps" />
+        <input className="map-search" placeholder="Search and choose place from Google Maps" />
       </StandaloneSearchBox>
 
       <GoogleMap
