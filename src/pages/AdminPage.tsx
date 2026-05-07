@@ -10,21 +10,23 @@ import { TagForm } from '../components/TagForm'
 import { apiRequest } from '../lib/api'
 import type { Memory, Place, Routine, RoutineOccurrence, SpecialDate, Tag, User } from '../types'
 
-type AdminSection = 'places' | 'memories' | 'routines' | 'occurrences' | 'tags' | 'specialDates'
+type AdminSection = 'dashboard' | 'places' | 'memories' | 'routines' | 'occurrences' | 'tags' | 'specialDates'
+type AdminSectionGroup = 'collections' | 'meta'
 
-const sections: { id: AdminSection; label: string }[] = [
-  { id: 'places', label: 'Places' },
-  { id: 'memories', label: 'Memories' },
-  { id: 'routines', label: 'Routines' },
-  { id: 'occurrences', label: 'Occurrences' },
-  { id: 'tags', label: 'Tags' },
-  { id: 'specialDates', label: 'Special Dates' },
+const sections: { id: AdminSection; label: string; group: AdminSectionGroup }[] = [
+  { id: 'dashboard', label: 'Dashboard', group: 'collections' },
+  { id: 'places', label: 'Places', group: 'collections' },
+  { id: 'memories', label: 'Memories', group: 'collections' },
+  { id: 'routines', label: 'Routines', group: 'collections' },
+  { id: 'occurrences', label: 'Occurrences', group: 'collections' },
+  { id: 'tags', label: 'Tags', group: 'meta' },
+  { id: 'specialDates', label: 'Special Dates', group: 'meta' },
 ]
 
 export function AdminPage() {
   const [token, setToken] = useState(() => localStorage.getItem('olm_token') ?? '')
   const [user, setUser] = useState<User | null>(null)
-  const [section, setSection] = useState<AdminSection>('places')
+  const [section, setSection] = useState<AdminSection>('dashboard')
   const [status, setStatus] = useState('Ready')
 
   const [places, setPlaces] = useState<Place[]>([])
@@ -107,6 +109,20 @@ export function AdminPage() {
     setUser(null)
   }
 
+  const sectionCount = (id: AdminSection) => {
+    if (id === 'dashboard') return places.length + memories.length + routines.length + specialDates.length
+    if (id === 'places') return places.length
+    if (id === 'memories') return memories.length
+    if (id === 'routines') return routines.length
+    if (id === 'occurrences') return occurrences.length
+    if (id === 'tags') return tags.length
+    return specialDates.length
+  }
+
+  const currentSection = sections.find((item) => item.id === section)
+  const collectionSections = sections.filter((item) => item.group === 'collections')
+  const metaSections = sections.filter((item) => item.group === 'meta')
+
   if (!token) {
     return (
       <main className="admin-shell centered">
@@ -123,53 +139,112 @@ export function AdminPage() {
       <aside className="admin-sidebar">
         <a className="brand-link" href="/">
           <span>OLM</span>
-          <strong>Public albums</strong>
+          <strong>Memory Archive</strong>
         </a>
         <nav className="admin-nav" aria-label="Admin sections">
-          {sections.map((item) => (
+          <p className="nav-group-label">Collections</p>
+          {collectionSections.map((item) => (
             <button key={item.id} className={section === item.id ? 'active' : ''} type="button" onClick={() => setSection(item.id)}>
-              {item.label}
+              <span className="nav-dot" aria-hidden="true" />
+              <span>{item.label}</span>
+              <strong>{sectionCount(item.id)}</strong>
+            </button>
+          ))}
+          <p className="nav-group-label">Meta</p>
+          {metaSections.map((item) => (
+            <button key={item.id} className={section === item.id ? 'active' : ''} type="button" onClick={() => setSection(item.id)}>
+              <span className="nav-dot" aria-hidden="true" />
+              <span>{item.label}</span>
+              <strong>{sectionCount(item.id)}</strong>
             </button>
           ))}
         </nav>
-        <button type="button" onClick={logout}>Logout</button>
+        <div className="admin-account">
+          <small>{user?.email ?? 'admin@example.com'}</small>
+          <button type="button" onClick={logout}>
+            <span className="nav-dot" aria-hidden="true" />
+            <span>Sign out</span>
+          </button>
+        </div>
       </aside>
 
       <section className="admin-main">
         <header className="admin-topbar">
           <div>
             <p className="eyebrow">{status}</p>
-            <h1>{sections.find((item) => item.id === section)?.label}</h1>
+            <h1>{currentSection?.label}</h1>
           </div>
-          <div>
-            <p className="eyebrow">Signed in</p>
-            <strong>{user?.email ?? 'Admin'}</strong>
+          <div className="admin-user-block">
+            <p className="eyebrow">Signed in as</p>
+            <strong>{user?.name ?? 'Admin'}</strong>
           </div>
           <button type="button" onClick={loadData}>Refresh</button>
         </header>
 
-        <section className="admin-stats">
-          <article>
-            <span>Places</span>
-            <strong>{places.length}</strong>
-          </article>
-          <article>
-            <span>Memories</span>
-            <strong>{memories.length}</strong>
-          </article>
-          <article>
-            <span>Routines</span>
-            <strong>{routines.length}</strong>
-          </article>
-          <article>
-            <span>Dates</span>
-            <strong>{specialDates.length}</strong>
-          </article>
-        </section>
+        {section === 'dashboard' && (
+          <section className="admin-dashboard" key="dashboard">
+            <section className="dashboard-hero">
+              <div>
+                <p className="eyebrow">Memory archive</p>
+                <h2>{places.length + memories.length + routines.length + specialDates.length} records curated</h2>
+                <p>Build the archive from places first, then connect memories, recurring routines, and important dates.</p>
+              </div>
+              <div className="dashboard-actions" aria-label="Quick actions">
+                <button type="button" onClick={() => setSection('places')}>Add place</button>
+                <button type="button" onClick={() => setSection('memories')}>Add memory</button>
+              </div>
+            </section>
+
+            <section className="admin-stats">
+              <article>
+                <span>Places</span>
+                <strong>{places.length}</strong>
+                <small>{places.length ? 'Mapped locations' : 'Start here'}</small>
+              </article>
+              <article>
+                <span>Memories</span>
+                <strong>{memories.length}</strong>
+                <small>{memories.length ? 'Stories saved' : 'No memories yet'}</small>
+              </article>
+              <article>
+                <span>Routines</span>
+                <strong>{routines.length}</strong>
+                <small>{routines.length ? 'Habits tracked' : 'Optional plans'}</small>
+              </article>
+              <article>
+                <span>Dates</span>
+                <strong>{specialDates.length}</strong>
+                <small>{specialDates.length ? 'Reminders kept' : 'Special moments'}</small>
+              </article>
+            </section>
+
+            <section className="dashboard-overview">
+              <article>
+                <p className="eyebrow">Archive health</p>
+                <h2>{places.length + memories.length + routines.length + specialDates.length} saved records</h2>
+                <p>Manage the places, memories, routines, and dates that power the public archive.</p>
+              </article>
+              <article>
+                <p className="eyebrow">Next action</p>
+                <h2>{places.length ? 'Add the next memory' : 'Add your first place'}</h2>
+                <p>{places.length ? 'Attach memories to a saved place so the archive map becomes richer.' : 'Start with a Mandalay place, then add memories around it.'}</p>
+              </article>
+            </section>
+          </section>
+        )}
 
         {section === 'places' && (
           <AdminCrudSection
-            form={<PlaceForm place={editingPlace} onSubmit={async (payload) => {
+            key="places"
+            form={<PlaceForm place={editingPlace} onResolveMapUrl={async (url) => {
+              setStatus('Reading map link')
+              const result = await apiRequest<{ data: { name?: string | null; address?: string | null; latitude: number; longitude: number } }>('/places/resolve-map-url', token, {
+                method: 'POST',
+                body: JSON.stringify({ url }),
+              })
+              setStatus('Map facts filled')
+              return result.data
+            }} onSubmit={async (payload) => {
               try {
                 setStatus(editingPlace ? 'Updating place' : 'Saving place')
                 const path = editingPlace ? `/places/${editingPlace.id}` : '/places'
@@ -184,7 +259,7 @@ export function AdminPage() {
                 setStatus(error instanceof Error ? error.message : 'Could not save place')
               }
             }} onCancel={editingPlace ? () => setEditingPlace(null) : undefined} />}
-            title="Places"
+            count={places.length}
             emptyTitle="No places yet"
             emptyCopy="Add Mandalay, Pyin Oo Lwin, Sagaing, Kyouk Se, or any place from the form."
           >
@@ -196,8 +271,9 @@ export function AdminPage() {
 
         {section === 'memories' && (
           <AdminCrudSection
+            key="memories"
             form={<MemoryForm memory={editingMemory} places={places} onSubmit={(payload) => saveResource('/memories', editingMemory, payload, setMemories, () => setEditingMemory(null), 'Memory')} onCancel={editingMemory ? () => setEditingMemory(null) : undefined} />}
-            title="Memories"
+            count={memories.length}
             emptyTitle="No memories yet"
             emptyCopy="Create your first memory from the form. Once saved, it will appear here for editing and deleting."
           >
@@ -209,8 +285,9 @@ export function AdminPage() {
 
         {section === 'routines' && (
           <AdminCrudSection
+            key="routines"
             form={<RoutineForm routine={editingRoutine} places={places} onSubmit={(payload) => saveResource('/routines', editingRoutine, payload, setRoutines, () => setEditingRoutine(null), 'Routine')} onCancel={editingRoutine ? () => setEditingRoutine(null) : undefined} />}
-            title="Routines"
+            count={routines.length}
             emptyTitle="No routines yet"
             emptyCopy="Add repeating routines for calendar planning."
           >
@@ -222,8 +299,9 @@ export function AdminPage() {
 
         {section === 'occurrences' && (
           <AdminCrudSection
+            key="occurrences"
             form={<RoutineOccurrenceForm occurrence={editingOccurrence} routines={routines} onSubmit={(payload) => saveResource('/routine-occurrences', editingOccurrence, payload, setOccurrences, () => setEditingOccurrence(null), 'Occurrence')} onCancel={editingOccurrence ? () => setEditingOccurrence(null) : undefined} />}
-            title="Routine Occurrences"
+            count={occurrences.length}
             emptyTitle="No occurrences yet"
             emptyCopy="Create occurrence records for a routine."
           >
@@ -235,8 +313,9 @@ export function AdminPage() {
 
         {section === 'tags' && (
           <AdminCrudSection
+            key="tags"
             form={<TagForm tag={editingTag} onSubmit={(payload) => saveResource('/tags', editingTag, payload, setTags, () => setEditingTag(null), 'Tag')} onCancel={editingTag ? () => setEditingTag(null) : undefined} />}
-            title="Tags"
+            count={tags.length}
             emptyTitle="No tags yet"
             emptyCopy="Add tags to organize memories."
           >
@@ -248,8 +327,9 @@ export function AdminPage() {
 
         {section === 'specialDates' && (
           <AdminCrudSection
+            key="specialDates"
             form={<SpecialDateForm specialDate={editingSpecialDate} onSubmit={(payload) => saveResource('/special-dates', editingSpecialDate, payload, setSpecialDates, () => setEditingSpecialDate(null), 'Special date')} onCancel={editingSpecialDate ? () => setEditingSpecialDate(null) : undefined} />}
-            title="Special Dates"
+            count={specialDates.length}
             emptyTitle="No special dates yet"
             emptyCopy="Add anniversaries, birthdays, and reminders."
           >
@@ -263,7 +343,7 @@ export function AdminPage() {
   )
 }
 
-function AdminCrudSection({ form, title, emptyTitle, emptyCopy, children }: { form: ReactNode; title: string; emptyTitle: string; emptyCopy: string; children: ReactNode }) {
+function AdminCrudSection({ form, count, emptyTitle, emptyCopy, children }: { form: ReactNode; count: number; emptyTitle: string; emptyCopy: string; children: ReactNode }) {
   const hasChildren = Array.isArray(children) ? children.length > 0 : Boolean(children)
 
   return (
@@ -272,9 +352,9 @@ function AdminCrudSection({ form, title, emptyTitle, emptyCopy, children }: { fo
       <section className="admin-list">
         <div className="admin-list-head">
           <div>
-            <p className="eyebrow">CRUD</p>
-            <h1>{title}</h1>
+            <h2>All entries</h2>
           </div>
+          <span>{count} records</span>
         </div>
         {hasChildren ? children : (
           <div className="empty-memories">
